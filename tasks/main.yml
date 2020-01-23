@@ -18,7 +18,7 @@
     group: elasticsearch
     mode: 0660
   with_items:
-    - elasticsearch.yml
+    - "{{ elasticsearch_config_template }}"
     - jvm.options
   notify: restart elasticsearch
 
