@@ -9,6 +9,27 @@
   package:
     name: elasticsearch
     state: "{{ elasticsearch_package_state }}"
+  
+- name: Secure elasticsearch
+  copy:
+    src: "{{ elastic_ca }}"
+    dest: "/etc/elasticsearch/{{ elastic_ca }}"
+  tags: secure
+
+- name: Create host certificate
+  command: /etc/bin/elasticsearch/elasticsearch-certutil cert 
+  args:
+    ca: "{{ elastic_ca }}"
+    name: "{{ inventory_hostname }}"
+    dns: "{{ inventory_hostname }}"
+    ip: "{{ ansible_host }}"
+  tags: secure
+
+- name: Remove ca
+  file:
+    path: "/etc/elasticsearch/{{ elastic_ca }}"
+    state: absent
+  tags: secure
 
 - name: Configure Elasticsearch.
   template:
