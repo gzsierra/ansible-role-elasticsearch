@@ -19,39 +19,50 @@
 - name: Secure elasticsearch
   copy:
     src: "{{ elastic_ca }}"
-    dest: "/etc/elasticsearch/{{ elastic_ca }}"
+    dest: "/etc/elasticsearch/{{ elastic_ca_file }}"
+    owner: "elasticsearch"
+    group: "elasticsearch"
+    mode: 0600
   tags: secure
-  when: stat_result.stat.exists == False
+  when: elastic_host_cert.stat.exists == False
 
 - name: Create host certificate
-  command: /etc/elasticsearch/bin/elasticsearch-certutil cert 
+  command: "{{ elastic_bin }}/elasticsearch-certutil cert 
+                              -ca /etc/elasticsearch/{{ elastic_ca_file }} 
+                              --name {{ inventory_hostname }} 
+                              --dns {{ inventory_hostname }} 
+                              --ip {{ ansible_host }} 
+                              --ca-pass \"{{ ca_pass }}\" 
+                              --pass \"{{ cert_pass }}\" 
+                              --out /etc/elasticsearch/{{ inventory_hostname }}.p12"
   args:
-    ca: "{{ elastic_ca }}"
-    name: "{{ inventory_hostname }}"
-    dns: "{{ inventory_hostname }}"
-    ip: "{{ ansible_host }}"
-    out: "/etc/elasticsearch/{{ inventory_hostname }}.p12"
+    chdir: "/etc/elasticsearch"
   tags: secure
-  when: stat_result.stat.exists == False
+  when: elastic_host_cert.stat.exists == False
+
+- name: Change file owner
+  file:
+    path: /etc/elasticsearch/{{ inventory_hostname }}.p12
+    owner: elasticsearch
 
 - name: Remove ca
   file:
-    path: "/etc/elasticsearch/{{ elastic_ca }}"
+    path: "/etc/elasticsearch/{{ elastic_ca_file }}"
     state: absent
   tags: secure
-  when: stat_result.stat.exists == False
+  when: elastic_host_cert.stat.exists == False
 #### END SECURITY
 
 - name: Configure Elasticsearch.
   template:
-    src: "{{ item }}.j2"
-    dest: /etc/elasticsearch/{{ item }}
-    owner: root
+    src: "{{ item.file }}"
+    dest: "/etc/elasticsearch/{{ item.dest }}"
+    owner: elasticsearch
     group: elasticsearch
     mode: 0660
-  with_items:
-    - "{{ elasticsearch_config_template }}"
-    - jvm.options
+  loop:
+    - { file: "{{ elasticsearch_config_template }}", dest: "elasticsearch.yml"}
+    - { file: "jvm.options.j2", dest: "jvm.options"}
   notify: restart elasticsearch
 
 - name: Force a restart if configuration has changed.

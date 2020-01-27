@@ -10,5 +10,11 @@ elasticsearch_config_template: elasticsearch.yml.j2
 elasticsearch_network_host: localhost
 elasticsearch_http_port: 9200
 
-elasticsearch_heap_size_min: 1g
+elasticsearch_heap_size_min: 2g
 elasticsearch_heap_size_max: 2g
+
+elastic_bin: /usr/share/elasticsearch/bin/
+
+cert_pass: ""
+ca_pass: ""
+elastic_ca_file: ca.p12
